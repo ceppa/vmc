@@ -94,6 +94,6 @@ See the [LICENSE](LICENSE) file for details.
 
 ## Author
 
-Your Name — [your.email@example.com](mailto:your.email@example.com)
+Carlo Ceppa — [carlo.ceppa@gmail.com](mailto:carlo.ceppa@gmail.com)
 
 ---
