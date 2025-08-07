@@ -87,7 +87,8 @@ gcc -o mqtt_uart_client main.c -lpaho-mqtt3as -lrt -pthread
 
 ## License
 
-Specify your license here (e.g., MIT, GPL, etc.)
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0).  
+See the [LICENSE](LICENSE) file for details.
 
 ---
 
