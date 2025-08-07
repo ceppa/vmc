@@ -15,7 +15,7 @@
 #define debug 0
 
 
-#define CONFIG_PATH "config.cfg"
+#define CONFIG_PATH "mqtt.cfg"
 #define DEFAULT_USERNAME "{USERNAME}"
 #define DEFAULT_PASSWORD "{PASSWORD}"
 
@@ -68,14 +68,28 @@ vars[]=
 	{"vmc/V2\0   ",29,2,0,unsetValue,unsetValue,0,0}
 };
 #define N sizeof vars / sizeof vars[0]
+
+void createDefaultConfig() 
+{
+    FILE *f = fopen(CONFIG_PATH, "w");
+    if (!f) 
+	{
+        fprintf(stderr, "Failed to create config file '%s'\n", CONFIG_PATH);
+        exit(EXIT_FAILURE);
+    }
+    fprintf(f, "username=%s\n", DEFAULT_USERNAME);
+    fprintf(f, "password=%s\n", DEFAULT_PASSWORD);
+    fclose(f);
+    printf("Config file '%s' created with default credentials.\n", CONFIG_PATH);
+    printf("Please edit it and fill in your actual MQTT username and password.\n");
+    exit(EXIT_SUCCESS);
+}
+
 void readConfig(const char *filename) 
 {
     FILE *f = fopen(filename, "r");
     if (!f) 
-	{
-        fprintf(stderr, "Could not open config file '%s', using defaults.\n", filename);
-        return;
-    }
+        createDefaultConfig();  // Creates file and exits
 
     char line[128];
     while (fgets(line, sizeof(line), f)) 
