@@ -14,6 +14,14 @@
 #define UPDATETIME 2000 	// ms update
 #define debug 0
 
+
+#define CONFIG_PATH "config.cfg"
+#define DEFAULT_USERNAME "{USERNAME}"
+#define DEFAULT_PASSWORD "{PASSWORD}"
+
+char mqtt_username[64] = DEFAULT_USERNAME;
+char mqtt_password[64] = DEFAULT_PASSWORD;
+
 int t=67000;
 int sendValue=0;
 MQTTAsync client;
@@ -60,6 +68,31 @@ vars[]=
 	{"vmc/V2\0   ",29,2,0,unsetValue,unsetValue,0,0}
 };
 #define N sizeof vars / sizeof vars[0]
+void readConfig(const char *filename) 
+{
+    FILE *f = fopen(filename, "r");
+    if (!f) 
+	{
+        fprintf(stderr, "Could not open config file '%s', using defaults.\n", filename);
+        return;
+    }
+
+    char line[128];
+    while (fgets(line, sizeof(line), f)) 
+	{
+        if (strncmp(line, "username=", 9) == 0) 
+		{
+            strncpy(mqtt_username, line + 9, sizeof(mqtt_username) - 1);
+            mqtt_username[strcspn(mqtt_username, "\r\n")] = 0;
+        }
+		else if (strncmp(line, "password=", 9) == 0) 
+		{
+            strncpy(mqtt_password, line + 9, sizeof(mqtt_password) - 1);
+            mqtt_password[strcspn(mqtt_password, "\r\n")] = 0;
+        }
+    }
+    fclose(f);
+}
 
 void segfault_sigaction(int signal)
 {
@@ -213,8 +246,8 @@ void doConnect()
 	MQTTAsync_connectOptions conn_opts=MQTTAsync_connectOptions_initializer;
 	conn_opts.keepAliveInterval=20;
 	conn_opts.cleansession=1;
-	conn_opts.username="envysoft";
-	conn_opts.password="Minair_17";
+	conn_opts.username=mqtt_username;
+	conn_opts.password=mqtt_password;
 	conn_opts.onSuccess=onConnect;
 	conn_opts.onFailure=onConnectFailure;
 	conn_opts.context=client;
@@ -258,7 +291,7 @@ int main(int argc, char **argv)
 	const char *urlDefault="127.0.0.1";
 	const int portDefault=1883;
 
-
+ 	readConfig(CONFIG_PATH);
 	sprintf(connString,"tcp://%s:%d",argc>1?argv[1]:urlDefault,argc>2?atoi(argv[2]):portDefault);
 	// Exception handling:ctrl + c
     signal(SIGINT, Handler);
