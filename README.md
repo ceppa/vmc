@@ -1,19 +1,24 @@
-# MQTT UART Client
+# VMC MQTT Controller
 
-A lightweight MQTT client in C that reads data from UART, processes it, and publishes to an MQTT broker.  
-Supports reading MQTT credentials from a config file with automatic creation of default config.
-
----
+This project is a C application designed to interface with a ventilation control system (VMC) via a UART serial connection, collect environmental sensor data, and communicate with an MQTT broker for home automation integration.
 
 ## Features
 
-- Connects to an MQTT broker using username and password read from a config file (`mqtt.cfg`).
-- If `mqtt.cfg` does not exist, it creates the file with default placeholders and exits with instructions.
-- Reads and parses UART data, publishes updates to configured MQTT topics.
-- Handles reconnection, subscription, and graceful shutdown.
-- Designed for embedded Linux systems with UART support.
+- Reads sensor values (temperature, airflow, pressure, etc.) from a VMC device using serial communication.
+- Publishes sensor data to MQTT topics for external monitoring or control.
+- Subscribes to a topic to receive speed-setting commands for the VMC system.
+- Automatically retries connection to MQTT broker and resubscribes if the connection is lost.
+- Supports basic signal handling for graceful shutdown.
+- Minimal latency between read cycles and command transmissions.
 
----
+## Technologies
+
+- **Language**: C
+- **Libraries**:
+  - [Paho MQTT C Async](https://www.eclipse.org/paho/index.php?page=clients/c/index.php) for MQTT communication
+  - `DEV_Config.h` for hardware-specific UART and GPIO setup
+- **Hardware**: Intended for systems with UART capabilities (e.g., Raspberry Pi with SC0 serial interface)
+
 
 ## Configuration
 
@@ -31,69 +36,70 @@ password={PASSWORD}
   - password=`{PASSWORD}`
 - Edit `mqtt.cfg` and replace these placeholders with your actual MQTT broker credentials before running the client again.
 
----
+## Build Instructions
 
-## Build & Run
-
-### Prerequisites
-
-- GCC compiler
-- [Paho MQTT Async C Client Library](https://www.eclipse.org/paho/clients/c/) installed
-- Development headers and libraries for UART (depends on platform)
-- `DEV_Config.h` and UART helper files (specific to your platform)
-
-### Compile
+You'll need:
+- GCC or compatible C compiler
+- The Paho MQTT C library (Async version)
+- `DEV_Config.h` and corresponding implementation for your device
 
 ```bash
-gcc -o mqtt_uart_client main.c -lpaho-mqtt3as -lrt -pthread
+gcc -o vmc_mqtt vmc_mqtt.c -lpaho-mqtt3as
 ````
 
-### Run
+Or, if you have other dependencies:
 
 ```bash
-./mqtt_uart_client [broker_ip] [broker_port]
+gcc -o vmc_mqtt vmc_mqtt.c -I/path/to/includes -L/path/to/libs -lpaho-mqtt3as -lpthread
 ```
-
-* Defaults to `127.0.0.1` and port `1883` if arguments are omitted.
-
----
 
 ## Usage
 
-1. Run the client once to generate the default config file:
+```bash
+./vmc_mqtt [broker_address] [port]
+```
 
-   ```bash
-   ./mqtt_uart_client
-   ```
+* `broker_address`: (Optional) IP or hostname of the MQTT broker. Defaults to `127.0.0.1`.
+* `port`: (Optional) MQTT port. Defaults to `1883`.
 
-   You will see a message asking to update `mqtt.cfg`.
+### Example
 
-2. Edit `mqtt.cfg` and set your MQTT broker username and password.
+```bash
+./vmc_mqtt 192.168.1.10 1883
+```
 
-3. Run the client again:
+## MQTT Topics
 
-   ```bash
-   ./mqtt_uart_client your.broker.address 1883
-   ```
+### Published Topics (examples)
 
----
+* `vmc/speed` – Current fan speed level
+* `vmc/NTC11`, `vmc/NTC12`, etc. – Temperature sensor readings
+* `vmc/BP`, `vmc/S4`, `vmc/SLA`, etc. – Binary or analog sensor values
 
-## Signal Handling
+### Subscribed Topic
 
-* Supports `SIGINT` (Ctrl+C) and `SIGQUIT` for graceful exit.
-* Catches segmentation faults and logs an error message.
+* `vmc/speed/set` – Accepts values `0`, `1`, `2`, or `3` to control VMC speed level
 
----
+## Command Mapping
+
+* `0` → OFF
+* `1` → ON
+* `2` → SPEED 1
+* `3` → SPEED 2
+* `4` → SPEED 3
+
+## Signals & Exit Handling
+
+* `SIGINT` / `SIGQUIT` handled gracefully to disconnect from the MQTT broker and free resources.
+
+## Notes
+
+* `DEV_Config` and hardware initialization functions must be provided or adapted for your specific environment.
+* Serial port is hardcoded to `/dev/ttySC0` and expects specific binary protocols.
+* Device credentials (username/password) are currently hardcoded. Secure this if deployed in production.
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0).  
-See the [LICENSE](LICENSE) file for details.
-
----
-
-## Author
-
-Carlo Ceppa — [carlo.ceppa@gmail.com](mailto:carlo.ceppa@gmail.com)
+This project is provided as-is. Adapt and reuse as needed.
 
 ---
